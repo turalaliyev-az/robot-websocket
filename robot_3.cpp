@@ -38,9 +38,18 @@ void on_message(connection_hdl hdl, server::message_ptr msg) {
         return;
     }
 
-    std::string msg_type = root.value("type", "");
-    int target_robot_id = root.value("robot_id", -1);
-    std::string content = root.value("payload", "");
+    std::string msg_type = "";
+    int target_robot_id = -1;
+    std::string content = "";
+    if (root.contains("type") && root["type"].is_string()) {
+        msg_type = root["type"];
+    }
+    if (root.contains("robot_id") && root["robot_id"].is_number_integer()) {
+        target_robot_id = root["robot_id"];
+    }
+    if (root.contains("payload") && root["payload"].is_string()) {
+        content = root["payload"];
+    }
 
     std::lock_guard<std::mutex> lock(clients_mutex);
 
@@ -93,12 +102,19 @@ void on_message_set_type(connection_hdl hdl, server::message_ptr msg) {
 
     try {
         root = json::parse(payload);
-    } catch (...) {
+    } catch (json::exception& e) {
+        std::cout << "JSON error: " << e.what() << std::endl;
         return;
     }
 
-    std::string type = root.value("type","unknown");
-    int robot_id = root.value("robot_id",-1);
+    std::string type = "unknown";
+    int robot_id = -1;
+    if (root.contains("type") && root["type"].is_string()) {
+        type = root["type"];
+    }
+    if (root.contains("robot_id") && root["robot_id"].is_number_integer()) {
+        robot_id = root["robot_id"];
+    }
 
     std::lock_guard<std::mutex> lock(clients_mutex);
     if(clients.find(hdl) != clients.end()){
@@ -132,7 +148,8 @@ int main() {
 
     ws_server.listen(9001);
     ws_server.start_accept();
-
+    //      -----------------
+    
     std::cout << "WebSocket++ server 9001 portunda çalışıyor." << std::endl;
 
     ws_server.run();
